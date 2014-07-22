@@ -1,0 +1,714 @@
+
+hrPing -- high resolution Ping/Traceroute/Pathping with advanced functions
+by cFos Software GmbH -- http://www.cfos.de
+--------------------------------------------------------------------------
+
+
+Why another Ping utility?
+-------------------------
+
+Many Ping utilities are already available, one is even released with
+Windows itself, called Ping.  But hrPing has some advanced features
+other Pings have not.
+
+In short:
+
+-- Graphical display of ping results
+-- Uses high resolution timers, so ping times are accurate to the usec
+-- Can ping as well with UDP packets or ICMP timestamp messages
+-- Times and handles ICMP error replies as well
+-- Can have multiple pings "in-flight", no need to wait for a reply before
+   sending the next ping
+-- Improved statistics
+-- Size sweep: send increasing packet sizes
+-- Can show only a summary of results
+-- Is a Traceroute and a Pathping as well
+
+You can do much more with hrPing than with Windows Ping.
+
+
+More text, please.
+------------------
+
+Like every Ping, hrPing sends "ICMP Echo Request" packets to the remote
+computer and listens to the matching "Echo response" packets.  What's more,
+hrPing can send UDP packets and ICMP timestamp packets as well.  Not all
+packet types pass all firewalls and networks equally easy.  With hrPing you
+have the possibility to vary.  (-M and -u switches)
+
+What's more, hrPing times the round trip delay in microseconds (1/1000 msec).
+This is usually done by using the Windows' "Performance Counter" which has
+a resolution of some MHz.  You can even ask hrPing to use the CPU's "Time
+Stamp Counter" which is incremented with the CPU's clock cycle.  You can't
+get any more accurate with standard PCs today!
+
+The next thing Windows Ping can not do is send more than one ping packet at a
+time.  Windows Ping always sends one packet, waits for the reply, then prints
+its output line, repeat.
+
+hrPing sends out one ping packet every x milliseconds (you can adjust this
+time with the -s parameter) while listening for incoming replies and printing
+the output if there is any.
+
+The reason why you should like this is easy: with broadband you often
+have a delay of some 40 msec, while the upstream bandwidth of the whole
+connection is some 500 kbytes/sec.  So, with a "standard" ping packet of
+60 bytes (IP header + ICMP header + ping payload) you can send thousands of
+packets before you get the first reply.  If you want to test line conditions,
+throughput, etc. this "overlapped" way of sending is really helpful.
+
+Plus, hrPing has much better statistics than Windows Ping.  You get the round
+trip times for ICMP error message replies as well!  This way you can e.g.
+monitor the delay of a TTL exceed.  hrPing counts the replies and error
+messages separately, so the global statistics don't mess up one another.
+Plus, for the statistically inclined, hrPing calculates the standard deviation
+as well, to show you how much the values "jiggle".  hrPing shows you the
+standard deviation of the timings as well as the average times.
+
+hrPing displays the IP identification field of the replies and thus makes it
+possible to do "silent load measurements"; see german c't magazine 23/2003,
+p. 212 for details.  (-I switch)
+
+When sending a lot of packets hrPing's "Summary mode" comes in handy: it will
+suppress the printing of each reply on its own line, but instead print a
+summary for all replies so far and a summary for the last 10 seconds (time can
+be adjusted).  This lets you keep a nice overall view.  (-y switch)
+
+Is there more?  Yes: hrPing can send out pings with increasing sizes: the
+"Size Sweep" function, where after each send, the size is increased until it
+reaches a maximum, then reset.  Plus, we do some math when processing the
+replies and estimate the line speed, if the data is conclusive enough.
+(-l and -L switches)
+
+Ah, one more thing: hrPing is a traceroute (-r switch) and a pathping
+(-p switch) as well :-)
+
+There's a lot more goodies hidden in hrPing, just use it and you will find out
+about small but useful features.
+
+
+
+And this is how to use it:
+--------------------------
+
+hrping [<options>] <host>
+
+<host> may be the IP address or the host name.  In the latter case the name
+will be resolved to its address at the beginning of the ping loop.
+
+
+There are a couple of options that let you specify the data you're sending:
+
+   -f             Set Don't Fragment flag in packet.
+
+Set the "Don't fragment" bit in the IP header of the ping packet.  Default is
+not set.
+
+   -i TTL         Time To Live.
+
+Set the "Time To Live" value in the IP header of the ping packet.  Default is
+255.
+
+   -v TOS         Type Of Service.
+
+Set the "Type Of Service" bits in the IP header of the ping packet.  Default
+is 0.  It is possible that Windows erases or overwrites this field when
+sending the packet.  Furthermore, TOS is deprecated nowadays.  hrPing will
+use IP_HDRINCL option to set TOS.
+
+   -l size        Send buffer size (ICMP payload size).
+
+How many bytes payload should be send?  Remember that each packet is of the
+form: IP header (20 bytes) + ICMP header (8 bytes) + payload.  You may only
+specify the payload size.  Minimum is 0, maximum is 64k-1-20-8, i.e. 65507
+bytes.  Default is 32 bytes.
+
+This works for UDP mode as well, but not for ICMP timestamp mode.  There
+the ICMP length is always 10 bytes.
+
+   -l s1[:s2[:i]]  Size sweep: send buffer size from <s1> to <s2> step <i>
+
+With this syntax hrPing will start sending a payload of <s1> bytes, increase
+the payload by <i> bytes for each send (if <i> was set, otherwise increment
+by 1) until <s2> is reached or exceeded and then restart with <s1> bytes.
+
+This switches the correlation calculation on that tries to see if there is a
+correlation between the size of the packet you send and the time it takes
+for a reply.
+
+   -L size        Total IP datagram size (ICMP payload size + 28).
+
+Same as the above, only that this size here is the size for the total
+IP datagram.
+
+   -L s1[:s2[:i]]  IP datagram size (payload size + 28, default 60) [with sweep]
+
+Analogue as above for -l s1[:s2[:i]]
+
+   -M             Send ICMP timestamp requests
+
+This will send out ICMP timestamp requests and print ICMP timestamp replies.
+In the reply there is the send time off the other side in milliseconds, so it's
+possible to distinguish between delay that was caused sending and delay that
+was caused when receiving.  These numbers have only millisecond resolution.
+To synchronise clocks hrPing will calculate the clock offset from the first
+ICMP timestamp reply, assuming that half of the delay came from each direction.
+
+   -u [port]      Send UDP packets (port 7 by default)
+
+You can send UDP packets as well.  This causes UDP packets to be send to and
+from port <port>.  Hopefully, the other side has no UDP port under that port
+number and will reply with a "port unreachable" message, which will be counted
+as a proper reply.
+
+
+
+Options that allow you to specify how hrPing operates:
+
+   -t             Ping the specified host until stopped.
+
+Loop forever.  You can abort hrPing any time with Ctrl-C.  Unlike Windows
+Ping, hrPing will still print the statistics gathered so far when you abort.
+Ctrl-C waits for some time for replies still to come in before it aborts.  If
+you are fed up with waiting, press Ctrl-C 5 times.  Ctrl-Break just prints the
+statistics, but doesn't abort.  That's nice in quiet mode or with many replies.
+
+   -n count       Number of echo requests to send.
+
+Specify the number of ping packets to send.  Default number is 4.
+
+For traceroute or pathping modes (see below) this specifies the number of pings
+per hop.  For tracerroute mode, the default number is 3.
+
+   -w timeout     Timeout in milliseconds to wait for each reply.
+
+Maximum timeout to wait for a reply.  This time applies when hrPing is waiting
+for the last replies to come in.  Furthermore, hrPing will even count a reply
+as timeouted if it took too long.  Default is 2000 milliseconds.
+
+   -s time        Interval in milliseconds between packets.
+
+This is the number of milliseconds between sending of two ping packets.
+hrPing will try to stick to this number quiet accurately.  If sending took a
+little longer for one packet it will send out the next packet a little
+earlier.  Default is 500 milliseconds.  (You can use decimals for a very fine
+grained interval: -s5.4 will send a packet every 5400 microseconds on
+average.)
+
+   -c [num]       Concurrent sending of up to <num> pings at a time (default 1)
+
+Try to keep a maximum of <num> pings in transmission without a reply.  When
+either a reply comes in or a timeout occurs, send more pings, so <num> pings
+are again in flight.
+
+-c (without a number) effectively turns off overlapped send/receive, since
+a second ping is only sent after a reply to the first or an timeout.  This,
+together with the -w option make hrPing behave like Windows' ping.
+
+   -r [count]     Be a traceroute (do <count> pings each hop, default 3)
+
+hrPing contains a traceroute utility!  It works almost the same as Windows
+TRACERT, except that you can specify how many packets are sent per hop,
+default is three.  By default, IP addresses are not resolved to names.  Use
+-a to do that.
+
+   -a [hop]       Resolve addresses to names for traceroute (start at <hop>)
+
+This tries to resolve the IP addresses into DNS names.  If you specify <hop>
+hrPing will not try to resolve the first <hop>-1 hops, since they are often
+not resolvable and it only costs time to try (and who has time nowadays?)
+
+   -p             Trace path to destination, then ping all hops on path
+
+Do a path ping: work like traceroute to get the adresses on the path to a
+given destination, then ping each of them individually (-u and -M honoured
+as well as other options that make sense (-l, even with size sweep, -c, -s,
+-w, etc).  At the end, print some statistics for all hops on the path.
+
+
+
+And some options control the output:
+
+   -lic           Show public license and warranty
+
+We need you to accept the software license.  This is done the first time you
+start hrPing.  If you want to re-read it, use this option.
+
+   -fwhelp        Print firewall help text
+
+Remarks on how to set up the Windows firewall to let hrPing's packets pass.
+
+   -F file        Log output into <file> as well, even if -q is set
+
+All output is logged to file <file> as well as to the screen.  If -q options
+are set, all output goes to log file, even if it's not printed to the screen.
+
+   -T             Print timestamp in front of each line
+
+Precede each line of output with a timestamp of the form
+"2012-05-22 18:19:53.508: "
+
+   -q[r|e|t]      Be quiet (-qr=no replies, -qe=no errors, -qt=no timeouts)
+
+Be quiet.  Use -qr to not print replies, -qe to not print IMCP error
+messages or -qt not to print timeouts.
+
+   -y [sec]       Print summary of the last <sec> secs (default 10)
+
+Be quiet, but print a summary of all packets (with counts and statistics)
+and one of packets of the last <sec> seconds.  Useful with small -s send
+delays or long sends (-t or high -n).
+
+   -? -h          Help
+
+Prints a help screen, -?? or -hh prints an even longer one.
+
+
+
+And then, we have options for the connoisseur:
+
+   -I id          Set ICMP id field to <id>
+
+Set the "Identification" IP header field to the value specified.  It is
+possible that Windows erases or overwrites this field when sending the packet.
+
+   -W             "warm up" with one uncounted echo request at beginning
+
+If specified, hrPing will send one uncounted ping before all others.  This
+"warm up" is useful with some firewalls that somehow cause the first packet
+to be much slower than the following ones.  -s, -w apply.
+
+   -A             Abort after the first echo reply (-AA => or error)
+
+Loop as long as there are no proper replies (or even error messages if -AA).
+
+   -H             Use IP_HDRINCL socket option (default for UDP or with TOS)
+
+With this option set, hrPing sets up his IP headers for send itself, otherwise
+Windows does it.  -H is selected automatically with -u or -v, because it
+doesn't work otherwise.
+
+   -E file        Stop pinging if <file> exists
+
+This is nice for batch files or for coordinating with a background job.
+hrPing will loop as long as usual (i.e. depending on -t or -n options), but
+will furthermore check for the existence of <file>.  If <file> comes into
+existence, hrPing will exit the loop.
+
+   -diag          Diagnose your connectivity: send different packet types
+
+Send all kinds of different packets (ICMP echo, ICMP timestamp, UDP) with high
+and low TTL to the destination and see if we get an answer.  That might be
+useful to check what is coming through your firewall or ISP.
+
+   -K             Wait for any key press when done
+
+Useful if hrPing is started from Windows Explorer.
+
+   -O ofs         Set time offset in msec for timestamp mode
+
+Specify the time offset between your time and the receiver's time by hand,
+otherwise hrPing will do that on the first reply.
+
+   -D             Print debug info
+
+Well, somewhere debug info is printed.  I don't want to be too specific.
+Actually, it's a secret. :-)
+
+
+
+You can mess around with the timer, if you want:
+
+   -perfcnt     Use performance counter (default)
+   
+Use the performance counter of Windows.  Usually, it's pretty accurate (some 
+MHz).  That's the default.
+
+   -tsc           Force RDTSC usage
+
+hrPing automatically decides if it uses the CPU's timestamp counter (TSC) or
+the operating system's performance counter for timings.  On some CPU's the TSC
+is not reliable, since it doesn't tick at the same speed all the time.  On
+multiprocessor systems, not all TSC's have to tick exactly in sync.  In almost
+all cases, hrPing will use the performance counter.  If you want to force TSC
+usage, try -tsc, but hrPing will only use the TSC if it thinks it's accurate.
+
+   -mmtime      Use multimedia timer; not very accurate
+   
+Use Windows' multimedia timers.  They should be at least accurate to the msec.
+   
+   -tick        Use Windows GetTickCount; very inaccurate!
+   
+Use the standard Windows timer.  That usually has a resoltion of 15 msec or so.
+Berk!
+
+   -prec        Measure timer precision
+   
+Not sure how accurate the timer is?  Measure it!
+
+
+
+Return codes:
+-------------
+
+For ping mode:
+
+0 - All sent pings were answered with their proper replies.
+1 - All sent pings were answered with their proper replies or ICMP error
+    messages.
+2 - At least some pings were answered with either their proper replies or
+    ICMP error messages.
+3 - No replies at all.
+9 - Error.
+
+
+For traceroute mode:
+
+0 - Reached destination
+2 - At least some pings were answered with either their proper replies or
+    ICMP error messages.
+3 - No replies at all.
+9 - Error.
+
+
+
+Now a test run:
+---------------
+
+Ping us:
+
+   C:\> hrping www.cfos.de
+   This is hrPING v5.00 by cFos Software GmbH -- http://www.cfos.de
+
+   Source address is 192.168.2.106; using ICMP echo-request, ID=cc09
+   Pinging www.cfos.de [194.95.249.23]
+   with 32 bytes data (60 bytes IP):
+
+   From 194.95.249.23: bytes=60 seq=0001 TTL=55 ID=becc time=42.803ms
+   From 194.95.249.23: bytes=60 seq=0002 TTL=55 ID=becd time=43.768ms
+   From 194.95.249.23: bytes=60 seq=0003 TTL=55 ID=bece time=44.842ms
+   From 194.95.249.23: bytes=60 seq=0004 TTL=55 ID=becf time=43.449ms
+
+   Packets: sent=4, rcvd=4, error=0, lost=0 (0.0% loss) in 1.546366 sec
+   RTTs in ms: min/avg/max/dev: 42.803 / 43.715 / 44.842 / 0.737
+   Bandwidth in kbytes/sec: sent=0.155, rcvd=0.155
+
+You see that hrPing numbers the packets in ascending order.  The sequence
+numbers of the replies are listed (if there are out-of-sequence packets,
+hrPing will write "SEQ=" instead of "seq=", so you notice).
+
+Notice the times in microseconds (milliseconds with 3 decimals).
+
+Furthermore, we see the TTL, which is the TTL of the sender, minus the number
+of hops the packet took to come here.  I guess TTL was initially set to 64,
+so it took the packet 10 hops to come here (64-55+1=10, TTL is only
+decremented on forward, not on the first send).
+
+Plus, hrPing prints the number of bytes in the received packet and the IP
+identification field.
+
+Please also notice the statistics with average and standard deviation
+(which is a measure of how wide the data points are spread out.  So
+4, 6, 4, 6 has a smaller deviation than 1, 9, 1, 9, even though the average
+is the same).
+
+
+
+Now let's look at a second test run:
+------------------------------------
+
+Try to ping us:
+
+   C:\> hrping -i1 www.cfos.de
+   This is hrPING v5.00 by cFos Software GmbH -- http://www.cfos.de
+
+   Source address is 192.168.2.106; using ICMP echo-request, ID=140d
+   Pinging www.cfos.de [194.95.249.23]
+   with 32 bytes data (60 bytes IP), TTL 1:
+
+   From 192.168.2.1: TTL count exceeded; bytes=56 seq=0001 TTL=64 ID=33b7 time=0.990ms
+   From 192.168.2.1: TTL count exceeded; bytes=56 seq=0002 TTL=64 ID=33b8 time=1.237ms
+   From 192.168.2.1: TTL count exceeded; bytes=56 seq=0003 TTL=64 ID=33b9 time=0.578ms
+   From 192.168.2.1: TTL count exceeded; bytes=56 seq=0004 TTL=64 ID=33ba time=1.041ms
+
+   Packets: sent=4, rcvd=0, error=4, lost=0 (0.0% loss) in 1.514205 sec
+   RTTs in ms: min/avg/max/dev: 0.578 / 0.961 / 1.237 / 0.239
+   Bandwidth in kbytes/sec: sent=0.158, rcvd=0.147
+
+Notice that this is a list of ICMP error messages, yet there are still the
+sequence numbers and round-trip-times listed.
+
+
+
+Measure the delay of your connection:
+-------------------------------------
+
+We use the smallest ping available and we use the shortest route available.  We
+could use traceroute mode to find the first hop and ping that one.  But
+experience shows that the hops often don't answer to pings.  So we use a
+trick: we send out packets with TTL 2: they will be bounced on the first
+external hop, since hop 1 is my internal router (use TTL 1 instead if you are
+directly connected to the Internet).  (The trick is not new, this is how
+traceroute works.)
+
+   C:\> hrping -i2 -l0 www.cfos.de
+   This is hrPING v5.00 by cFos Software GmbH -- http://www.cfos.de
+
+   Source address is 192.168.2.106; using ICMP echo-request, ID=a40e
+   Pinging www.cfos.de [194.95.249.23]
+   with 0 bytes data (28 bytes IP), TTL 2:
+
+   From 217.0.119.53: TTL count exceeded; bytes=56 seq=0001 TTL=254 ID=0000 time=17.168ms
+   From 217.0.119.53: TTL count exceeded; bytes=56 seq=0002 TTL=254 ID=0000 time=16.634ms
+   From 217.0.119.53: TTL count exceeded; bytes=56 seq=0003 TTL=254 ID=0000 time=16.740ms
+   From 217.0.119.53: TTL count exceeded; bytes=56 seq=0004 TTL=254 ID=0000 time=16.342ms
+
+   Packets: sent=4, rcvd=0, error=4, lost=0 (0.0% loss) in 1.529537 sec
+   RTTs in ms: min/avg/max/dev: 16.342 / 16.721 / 17.168 / 0.296
+   Bandwidth in kbytes/sec: sent=0.073, rcvd=0.146
+
+So, the minimum delay seems to be some 16.3 ms.  If you increase the
+number of tries you might find an even smaller delay, but it's not
+very likely it will shrink a lot more:
+
+   C:\> hrping -i2 -l0 -n1000 -q -s20 www.cfos.de
+   This is hrPING v5.00 by cFos Software GmbH -- http://www.cfos.de
+
+   Source address is 192.168.2.106; using ICMP echo-request, ID=040b
+   Pinging www.cfos.de [194.95.249.23]
+   with 0 bytes data (28 bytes IP), TTL 2:
+
+
+   Packets: sent=1000, rcvd=0, error=1000, lost=0 (0.0% loss) in 20.001239 sec
+   RTTs in ms: min/avg/max/dev: 15.501 / 16.181 / 19.551 / 0.547
+   Bandwidth in kbytes/sec: sent=1.399, rcvd=2.799
+
+So, the real minimum seems to be around 15.5 ms.
+
+
+We might want to run hrPing all the time to see how well our line is.  We
+can do that and instruct hrPing to be silent and only display a summary:
+
+   C:\> hrping -i2 -l0 -t -y www.cfos.de
+   This is hrPING v5.00 by cFos Software GmbH -- http://www.cfos.de
+
+   Source address is 192.168.2.106; using ICMP echo-request, ID=1807
+   Pinging www.cfos.de [194.95.249.23]
+   with 0 bytes data (28 bytes IP), TTL 2:
+
+   Total:
+     Packets: sent=85, rcvd=0, error=85, lost=0 (0.0% loss) in 42.042626 sec
+     RTTs in ms: min/avg/max/dev: 15.815 / 18.558 / 34.122 / 5.022
+     Bandwidth in kbytes/sec: sent=0.056, rcvd=0.113
+
+   Last 10 seconds:
+     Packets: sent=20, rcvd=0, error=20, lost=0 (0.0% loss) in 9.531548 sec
+     RTTs in ms: min/avg/max/dev: 16.040 / 23.758 / 34.122 / 7.203
+     Bandwidth in kbytes/sec: sent=0.058, rcvd=0.117
+   [Aborting...]
+   Packets: sent=85, rcvd=0, error=85, lost=0 (0.0% loss) in 42.042626 sec
+   RTTs in ms: min/avg/max/dev: 15.815 / 18.558 / 34.122 / 5.022
+   Bandwidth in kbytes/sec: sent=0.056, rcvd=0.113
+
+This will continue to show a summary (to end it I pressed Ctrl-C).  The
+summary shows that we had an increased ping time in the last 10
+seconds.  This is no wonder, since I ran an upload at the same time.
+
+
+
+What is my line speed?
+----------------------
+
+hrPing has this nice size sweep feature.  Let's try it:
+
+   C:\> hrping www.cfos.de -l0:1400:96 -n20 -s20
+   This is hrPING v5.00 by cFos Software GmbH -- http://www.cfos.de
+
+   Source address is 192.168.2.106; using ICMP echo-request, ID=e80d
+   Pinging www.cfos.de [194.95.249.23]
+   with 0-1400 bytes data (28-1428 bytes IP):
+
+   From 194.95.249.23: bytes=28 seq=0001 TTL=55 ID=bf45 time=43.591ms
+   From 194.95.249.23: bytes=124 seq=0002 TTL=55 ID=bf46 time=42.699ms
+   From 194.95.249.23: bytes=220 seq=0003 TTL=55 ID=bf47 time=44.006ms
+   From 194.95.249.23: bytes=316 seq=0004 TTL=55 ID=bf48 time=43.198ms
+   From 194.95.249.23: bytes=412 seq=0005 TTL=55 ID=bf49 time=44.212ms
+   From 194.95.249.23: bytes=508 seq=0006 TTL=55 ID=bf4a time=43.859ms
+   From 194.95.249.23: bytes=604 seq=0007 TTL=55 ID=bf4b time=44.744ms
+   From 194.95.249.23: bytes=700 seq=0008 TTL=55 ID=bf4c time=45.763ms
+   From 194.95.249.23: bytes=796 seq=0009 TTL=55 ID=bf4d time=44.257ms
+   From 194.95.249.23: bytes=892 seq=000a TTL=55 ID=bf4e time=46.415ms
+   From 194.95.249.23: bytes=988 seq=000b TTL=55 ID=bf4f time=46.215ms
+   From 194.95.249.23: bytes=1084 seq=000c TTL=55 ID=bf50 time=45.993ms
+   From 194.95.249.23: bytes=1180 seq=000d TTL=55 ID=bf51 time=46.744ms
+   From 194.95.249.23: bytes=1276 seq=000e TTL=55 ID=bf52 time=46.761ms
+   From 194.95.249.23: bytes=1372 seq=000f TTL=55 ID=bf53 time=47.214ms
+   From 194.95.249.23: bytes=28 seq=0010 TTL=55 ID=bf54 time=43.284ms
+   From 194.95.249.23: bytes=124 seq=0011 TTL=55 ID=bf55 time=43.345ms
+   From 194.95.249.23: bytes=220 seq=0012 TTL=55 ID=bf56 time=44.738ms
+   From 194.95.249.23: bytes=316 seq=0013 TTL=55 ID=bf57 time=44.561ms
+   From 194.95.249.23: bytes=412 seq=0014 TTL=55 ID=bf58 time=44.263ms
+
+   Packets: sent=20, rcvd=20, error=0, lost=0 (0.0% loss) in 0.434017 sec
+   RTTs in ms: min/avg/max/dev: 42.699 / 44.793 / 47.214 / 1.337
+   Bandwidth in kbytes/sec: sent=26.727, rcvd=26.727
+   Correlation: 91.6%, estimated speed: 281.11 kbytes/sec
+
+As you can see, the "bytes=" are increasing, since the proper reply to a
+ping packet with N bytes is a pong packet with N bytes.
+
+Furthermore, you may notice that the reply time is increasing slightly with
+the packet size.  We do some statistics on it (linear regression and
+correlation) and get a correlation coefficient: 91.6%.
+
+Generally, a correlation of 50% or more is called "correlated", of 80% or more
+"highly correlated".  That means: the larger the packet, the larger the time
+and time is proportional to packet size.  hrPing estimates the speed to be
+some 280 kbytes/s.  As a matter of fact, that is too slow, but measurements
+show smaller throughputs the longer the route is.
+
+Let's try the same with hop 2 (the first external hop):
+
+   C:\> hrping www.cfos.de -l0:1400:96 -n20 -s20 -i2
+   This is hrPING v5.00 by cFos Software GmbH -- http://www.cfos.de
+
+   Source address is 192.168.2.106; using ICMP echo-request, ID=9c01
+   Pinging www.cfos.de [194.95.249.23]
+   with 0-1400 bytes data (28-1428 bytes IP), TTL 2:
+
+   From 217.0.119.53: TTL count exceeded; bytes=56 seq=0001 TTL=254 ID=0000 time=16.164ms
+   From 217.0.119.53: TTL count exceeded; bytes=80 seq=0002 TTL=254 ID=0000 time=16.125ms
+   From 217.0.119.53: TTL count exceeded; bytes=80 seq=0003 TTL=254 ID=0000 time=16.271ms
+   From 217.0.119.53: TTL count exceeded; bytes=80 seq=0004 TTL=254 ID=0000 time=16.524ms
+   From 217.0.119.53: TTL count exceeded; bytes=80 seq=0005 TTL=254 ID=0000 time=17.250ms
+   From 217.0.119.53: TTL count exceeded; bytes=80 seq=0006 TTL=254 ID=0000 time=16.856ms
+   From 217.0.119.53: TTL count exceeded; bytes=80 seq=0007 TTL=254 ID=0000 time=17.577ms
+   From 217.0.119.53: TTL count exceeded; bytes=80 seq=0008 TTL=254 ID=0000 time=17.362ms
+   From 217.0.119.53: TTL count exceeded; bytes=80 seq=0009 TTL=254 ID=0000 time=18.080ms
+   From 217.0.119.53: TTL count exceeded; bytes=80 seq=000a TTL=254 ID=0000 time=17.851ms
+   From 217.0.119.53: TTL count exceeded; bytes=80 seq=000b TTL=254 ID=0000 time=18.158ms
+   From 217.0.119.53: TTL count exceeded; bytes=80 seq=000c TTL=254 ID=0000 time=18.372ms
+   From 217.0.119.53: TTL count exceeded; bytes=80 seq=000d TTL=254 ID=0000 time=19.002ms
+   From 217.0.119.53: TTL count exceeded; bytes=80 seq=000e TTL=254 ID=0000 time=18.442ms
+   From 217.0.119.53: TTL count exceeded; bytes=80 seq=000f TTL=254 ID=0000 time=18.895ms
+   From 217.0.119.53: TTL count exceeded; bytes=56 seq=0010 TTL=254 ID=0000 time=16.676ms
+   From 217.0.119.53: TTL count exceeded; bytes=80 seq=0011 TTL=254 ID=0000 time=16.259ms
+   From 217.0.119.53: TTL count exceeded; bytes=80 seq=0012 TTL=254 ID=0000 time=16.400ms
+   From 217.0.119.53: TTL count exceeded; bytes=80 seq=0013 TTL=254 ID=0000 time=16.941ms
+   From 217.0.119.53: TTL count exceeded; bytes=80 seq=0014 TTL=254 ID=0000 time=17.573ms
+
+   Packets: sent=20, rcvd=0, error=20, lost=0 (0.0% loss) in 0.407530 sec
+   RTTs in ms: min/avg/max/dev: 16.125 / 17.338 / 19.002 / 0.911
+   Bandwidth in kbytes/sec: sent=28.464, rcvd=3.808
+   Correlation: 95.2%, estimated speed: 428.86 kbytes/sec
+
+This is more like it (I have about 500 kbytes/sec upstream).
+
+The estimated speed is only shown if there is a correlation of at least 40%,
+otherwise the estimation is too vague.
+
+Linear regression is very sensitive to stray data.  Often you ping 50 times
+and get 49 good replies (say in the 50 msecs) and one that is way too high
+(say 150 msec).  Normally, this would badly offset your correlation and linear
+regression.  But if you know a reasonable upper limit for your replies, you
+can filter out the stray replies with the -w option, which sets the maximum
+time to wait for a reply.  The trick here is that hrPing counts replies as
+timeouts, even if they arrived back, but it took longer than the timeout time.
+
+In our above example, you may use a -w60 to filter out the stray 150 msec peak.
+
+If you have no idea what timeout time to use, try a -w with the average time
+plus 2-3 times the deviation.
+
+
+
+Graphics!
+---------
+
+To have hrPing open a window as well and graph the results type this:
+
+   C:\> hrping www.cfos.de -t -i2 -g
+   This is hrPING v5.00 by cFos Software GmbH -- http://www.cfos.de
+
+   Source address is 192.168.2.106; using ICMP echo-request, ID=cc09
+   Pinging www.cfos.de [194.95.249.23]
+   with 32 bytes data (60 bytes IP), TTL 2:
+
+   From 217.0.119.53: TTL count exceeded; bytes=80 seq=0001 TTL=254 ID=0000 time=16.494ms
+   From 217.0.119.53: TTL count exceeded; bytes=80 seq=0002 TTL=254 ID=0000 time=16.673ms
+   From 217.0.119.53: TTL count exceeded; bytes=80 seq=0003 TTL=254 ID=0000 time=16.017ms
+   From 217.0.119.53: TTL count exceeded; bytes=80 seq=0004 TTL=254 ID=0000 time=16.532ms
+   From 217.0.119.53: TTL count exceeded; bytes=80 seq=0005 TTL=254 ID=0000 time=16.969ms
+   From 217.0.119.53: TTL count exceeded; bytes=80 seq=0006 TTL=254 ID=0000 time=16.910ms
+   From 217.0.119.53: TTL count exceeded; bytes=80 seq=0007 TTL=254 ID=0000 time=16.335ms
+   [Aborting...]
+
+   Packets: sent=7, rcvd=0, error=7, lost=0 (0.0% loss) in 3.027021 sec
+   RTTs in ms: min/avg/max/dev: 16.017 / 16.561 / 16.969 / 0.305
+   Bandwidth in kbytes/sec: sent=0.138, rcvd=0.185
+
+This will open a window and show the ping times.  After aborting, the window
+will stay open.
+
+In the window you can select the time scale that is shown and you can choose
+to show an average of the values, with different average times.
+
+If you like the window to be automatically closed when hrPing closes (even on
+Ctrl-C), use -gg instead of -g.
+
+
+
+You can have multiple graphs in one window
+------------------------------------------
+
+Start the first hrPing regularly:
+
+   C:\> hrping www.cfos.de -t -i2 -g
+   This is hrPING v5.00 by cFos Software GmbH -- http://www.cfos.de
+   [...]
+
+After that, start the second hrPing with a -G instead:
+
+   C:\> hrping www.cfos.de -t -G
+   This is hrPING v5.00 by cFos Software GmbH -- http://www.cfos.de
+   [...]
+
+This will produce two graphs in the same window.  Nice! :-)
+
+You find the hrPing textual reply lines annoying?  Add a -y to get a summary
+or a -q to leave it away altogether.
+
+
+
+System requirements:
+--------------------
+
+hrPing should work well on all systems running Windows XP and above (Vista,
+Windows 7, Windows 8 previews and the server OSes Server 2003 and 2008 as
+well).
+
+Usually, you have to be a member of the Administrator group to run hrPing,
+since hrPing uses "raw sockets".
+
+Under XP, you can open access to raw sockets for every user by setting the
+following Registry key under HKEY_LOCAL_MACHINE to 1 (DWORD):
+   System\CurrentControlSet\Services\Afd\Parameters\DisableRawSecurity
+This feature was removed in Vista. :-(
+
+
+
+Share and enjoy! <tm>
+---------------------
+
+Thank you for using hrPing!  hrPing is Freeware, share it with anybody
+(actually, everybody! :-)).
+
+Check out www.cfos.de for new versions of hrPing and for some of our other
+solutions as well:
+
+-- Internet Acceleration via Traffic Shaping     : cFosSpeed
+-- Webserver for home users and professionals    : cFos Personal Net
+-- IPv6 Connectivity for XP, Vista and Windows 7 : cFos IPv6 Link
+-- Internet Dial-Up for high-speed access        : cFos Broadband Connect
+
+hrPing by cFos Software GmbH -- http://www.cfos.de

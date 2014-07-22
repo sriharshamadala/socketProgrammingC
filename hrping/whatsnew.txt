@@ -1,0 +1,347 @@
+
+hrPing -- high resolution Ping/Traceroute/Pathping with advanced functions
+by cFos Software GmbH -- http://www.cfos.de
+
+What's new?
+---------------------------------------------------------------------------
+
+Legend:
+
+  * New feature
+  + Improvement
+  ! Software change requires modification of your configuration
+  x Bugfix
+  - Information only
+
+
+Revision history: ---------------------------------------------------------
+
+
+
+v5.04 -- 25-Jun-2012
+
+* Added -p option: hrPing is now a pathping as well!  In pathping mode, hrPing
+  will first work like traceroute and find the path to the destination, then
+  ping all hops on that path.  Pathping mode honours all useful hrPing options
+  like -l, -u, -i, -s, -w, etc.
+
+* Added -c option: concurrent sending.  With this options set to <num>, hrPing
+  will keep at maximum <num> pings at a time in transmission.  That means it
+  will send a new ping after it received a reply or a timeout of an already
+  sent one.  When using -c, -s times are not observed.
+
++ Added -prec parameter to measure timer precision.  Added -tick parameter, so
+  you can compare how bad the standard timer is. :)  Furthermore added support
+  for multimedia timer with -mmtime, which gives at least 1000 Hz resolution.
+
++ Added some more time scales to graphics.
+
++ Quicker host name resolution in traceroute mode.
+
+x Fixed missing timestamps in front of "Timeout waiting for" lines (-T
+  option).  Thanks to Daniel Beardsmore for bug report.
+
+x Fixed "Can't find own IP address!" error.  Thanks to shaori.
+
+
+
+v5.00 -- 29-May-2012
+
+! The big new thing is a graphical front-end to display ping results.  The
+  front-end is an add-on, so the usual hrPing command line has not changed,
+  you can just display all the timings in an extra window!  The graphical
+  front-end is called grping.exe and can (so far) not be used alone.
+
+  In the graphic you can change the time scale, show averages and display
+  results of multiple ping runs in one graphic.
+
+  How to use it with hrPing:
+  Use -g switch to open a new window for the results.
+  Use -gg switch like -g, but close that window when hrPing closes.
+  Use -G switch to use an already existing grping window to display results;
+  this is the way to show more than one graph in one window.
+
+* Added packet size sweep support: -l and -L accept now sizes of the form
+  start:end:incrememt.  The packets sent will start with size 'start' and will
+  be incremented by 'increment' each time until 'end' is reached, then the
+  cycle repeats.
+
+  An added bonus is the calculation of the correlation between the size of the
+  packet and the time.  An correlation of > 80% means that there is a strong
+  correlation.  If the correlation is >= 40% we print an estimate of the line
+  speed. :-)
+
++ Added printing of timeouts again, plus -qt parameter to switch it off.
+  Thanks to Casey Mills for the idea.
+
++ If -F is set (logging to a file) and -q (or one of -qr, -qe, -qt) as well,
+  then there is still no screen output for the specific type of messages, but
+  they are written to the log file nevertheless.  Thanks to Matthias Wald for
+  the inspiration.
+
+x Fixed a memory leak.
+
+x Fixed a rare crash.
+
+x Hopefully fixed "buffer overflow" errors in log file.  Thanks to Matthias
+  Wald.
+
+x "Can't find own IP address!" was issued when the destination host was
+  directly connected.  Fixed.
+
+
+
+v4.00 -- 26-Mar-2012
+
+* Complete rewrite of hrPING.  I hope, I didn't break too much.  If anything
+  doesn't work as expected, please let me know.
+
+  New features:
+  * hrPING now uses almost no CPU load.  Old hrPING uses full load on one
+    core.
+  * The summary option -y now display proper min/max values as well as a
+    better lost value.
+  * Added -diag option to send all kinds of packets to the destination and
+    print what is coming through.
+  * ICMP timestamp mode shows petter rx/tx differences.
+  * hrPING continues to ping, even if the sockets return an error (like lost
+    connectivity).
+  * -w timeout is now honoured even if the packet is received, but too late.
+    In such a case, the packet is counted as lost.
+
+
+
+v3.13 -- 16-Nov-2011
+
+- Switches -n, -l, -L, -i, -v and -I now accepts 0x and 0y prefixes for
+  hex and binary arguments.
+
+- hrPING will now only abort after a failed send if it was the frist send.
+
+
+
+v3.12 -- 15-Feb-2011
+
+- If -v option (to set TOS byte) is used under Vista+, -H (IP_HDRINCL socket
+  option) is automatically set.  Otherwise, setting the TOS byte doesn't
+  work any more under Vista+.
+
+
+
+v3.11
+
+- Parameter -y now accepts the number of seconds to use for summary as an
+  integer parameter.
+
+
+
+v3.10 -- 16-Nov-2010
+
+- Added summary option: -y
+
+  With this option set, you get a summary every half second with the total
+  statistics and the statistics over the last 5 seconds.
+
+  Furthermore, statistics now show the bandwidth of rx and tx as well.
+
+
+
+v3.01 -- 31-Aug-2010
+
+- Fixed UDP pinger.  Now it works really smoothly! :-)
+
+- Added more help when hrPING receives no replies.  Added -fwhelp.
+
+
+
+v3.00 -- 31-Aug-2010
+
+- hrPING now supports UDP pinging!  Specify -u to send UDP packets.  Since
+  there will be most probably no one replying on the other side, the reply
+  will still be an ICMP message (port unreachable).
+
+- hrPING can send and process ICMP timestamp requests.  Use -M to do that.
+  Use -O <ofs> to add/subtract <ofs> from the times in case the other's
+  clock is set differently.
+
+- Some small fixes.
+
+
+
+v2.45
+
+- hrPING works now with Unicode filename as well.
+
+- When -F is specified date/time and commandline args are printed as well.
+
+
+
+v2.44 -- 19-Apr-2010
+
+- Added measuring and printing of standard deviation of ping values as well.
+
+
+
+v2.43 -- 15-Mar-2010
+
+- Added proper error message if raw socket could not be created.
+
+
+
+v2.42 -- 15-Sep-2009
+
+- Default ICMP payload size is now 32, like Windows ping.
+
+
+
+v2.41 -- 11-Sep-2009
+
+- Added -qr, -qe, -qt switches to switch off only reply, error resp. timeout
+  printing.  Thanks to Henno Täht for the idea.
+
+
+
+v2.40 -- 10-Sep-2009
+
+- When -T is set, print timestamp in front of "Request timed out." lines as
+  well (non-overlapped mode).  Thanks to Henno Täht for report.
+
+
+
+v2.39 -- 26-Feb-2009
+
+- hrPING now works better if the payload is unexpected on Echo-Replies.
+  Thanks to Steffen Heuel for the idea.
+
+
+
+v2.38 -- 07-Nov-2007
+
+- Added route_debug -R switch to find problems with own_ip address.
+
+
+
+v2.37
+
+- Added support to send pings to broadcast address (255.255.255.255)
+  as well.
+
+
+
+v2.35 -- 13-Apr-2007
+
+- Added -S option to add sent/recv/missing stats to every output line.
+  Thanks to paggio for inspiration.
+
+- Display MTU on ICMP message "fragmentation needed, but DF set".
+
+
+
+v2.34 -- 14-Feb-2007
+
+- Fixed a bug where commandline switches -n, -l, -L, -i, -w, -s, -v, -Q
+  and -I would not work anymore.  Thanks to Günter Niedermeier for his
+  report.
+
+- Added Windows Vista manifest and signature.
+
+
+
+v2.33 -- 22-Nov-2006
+
+- Fixed a GPF when domain name could not be resolved.
+
+- Updated documentation.
+
+
+
+v2.31
+
+- New errorlevels, see hrping.txt.
+
+- New -q parameter: don't print a line per ping.
+
+- New -I parameter: set ICMP id field.
+
+
+
+v2.27 -- 16-Feb-2004
+
+- New -F parameter: log output to file as well as to screen.
+
+- New -T parameter: precede every output line with a date/timestamp.
+  Thanks to George A. van Dorth for these ideas.
+
+
+
+v2.26 -- 29-Jan-2004
+
+- Total time is more accurate now.
+
+
+
+v2.25 -- 15-Jan-2004
+
+- Cosmetic fixes.
+
+- Traceroute mode would stop after less than 30 hops if the last hops
+  didn't answer.  More thanks to Robert Dinges.
+
+- New -W parameter.  Warm-up was default until now, but is no longer.
+
+
+
+v2.24 -- 14-Jan-2004
+
+- If the last ping in traceroute mode produced a "*", the hops' IP
+  address would not be printed, even if some earlier ping to the same
+  host succeeded.  Fixed.  Thanks to Robert Dinges for his tip.
+
+
+
+v2.23 -- 10-Nov-2003
+
+- Added display of IP Identification field.  Thanks to Daniel Hahler
+  and c't magazine for the idea.  See c't 23/2003, p. 212 for more
+  info.
+  The field is read in network (i.e. non-intel) byte order.
+
+
+
+v2.22 -- 28-Feb-2003
+
+- Fixes so hrPING works with IPSec.  Thanks to Frank Sauter for
+  testing.
+
+- Added parameter to -a option.
+
+
+
+v2.20 -- 21-Feb-2003
+
+- Traceroute mode now can do an arbitrary number of tests per hop.
+  Specify behind the -r parameter.
+
+
+
+v2.10
+
+- Added -Q<vsn> to check if hrPING has at least version <vsn>.
+  Errorlevel will be 2 if it has at least the specified version,
+  1 otherwise.
+
+
+
+v2.02
+
+- Added -E switch.  hrPING will stop pinging, if the file specified
+  after -E exists.  Note that it still honours the -t, -n switches.
+
+- hrPING will return errorlevel 0 only if all ping packets were
+  replied (sequence does not matter, though).
+
+
+
+v2.01 -- 13-Sep-2002
+
+- First public release.
